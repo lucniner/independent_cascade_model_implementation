@@ -58,6 +58,9 @@ public class IndependentCascadeModel {
         currentActive = activatedNodes.size();
       }
       final Node u = heap.poll();
+      if (u == null) {
+        throw new RuntimeException("no node in heap to poll");
+      }
       if (u.getFlag() == activatedNodes.size()) {
         activatedNodes.add(u);
         heap.remove(u);

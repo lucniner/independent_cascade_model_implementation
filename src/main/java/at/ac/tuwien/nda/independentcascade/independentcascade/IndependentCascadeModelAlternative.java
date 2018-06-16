@@ -104,7 +104,7 @@ public class IndependentCascadeModelAlternative {
       u.setFlag(0);
       u.setPrevBest(currBest);
       u.setMarginalGain1(sigma(u, alreadyActivated));
-      u.setMarginalGain2(sigma(u, currBest, alreadyActivated));
+      u.setMarginalGain2(sigma(currBest, alreadyActivated) + sigma(u, currBest, alreadyActivated));
       queue.add(u);
 
       if (currBest == null) {

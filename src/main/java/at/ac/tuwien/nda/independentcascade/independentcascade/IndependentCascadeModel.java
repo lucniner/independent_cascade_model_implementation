@@ -121,19 +121,16 @@ public class IndependentCascadeModel {
         count++;
       }
     }
-
     return count;
   }
 
   private double calculateMarginalGainBasedOnActiveNodesAndCurrentBest(final Node node) {
     int count = 0;
-    if (!node.equals(currentBest)) {
-      for (final Node n : this.graph.get(node)) {
-        if (!activatedNodes.contains(n) && !n.equals(currentBest)) {
-          count++;
-        }
+    for (final Node n : this.graph.get(node)) {
+      if (!activatedNodes.contains(n) && !n.equals(currentBest)) {
+        count++;
       }
     }
-    return count;
+    return count++;
   }
 }

@@ -71,7 +71,7 @@ public class Node implements Comparable {
   @Override
   public int compareTo(final Object o) {
     if (o instanceof Node) {
-      return (int) (this.getMarginalGain1() - ((Node) o).getMarginalGain1());
+      return (int) (((Node) o).getMarginalGain1() - this.getMarginalGain1());
     }
     return 0;
   }

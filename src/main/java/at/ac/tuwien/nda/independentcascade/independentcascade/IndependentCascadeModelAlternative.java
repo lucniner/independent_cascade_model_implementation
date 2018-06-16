@@ -35,20 +35,27 @@ public class IndependentCascadeModelAlternative {
         return new Pair(alreadyActivated.size(), seedSet);
     }
 
+    private void addAlreadyActivated(Node u) {
+        alreadyActivated.add(u.getId());
+        if (this.graph.containsKey(u)) {
+            for (Node neighbors : this.graph.get(u)) {
+                if (!alreadyActivated.contains(neighbors.getId())) {
+                    if (activationProbabilityEdges.get(new Pair(u.getId(), neighbors.getId()))) {
+                        alreadyActivated.add(neighbors.getId());
+                        addAlreadyActivated(neighbors);
+                    }
+                }
+            }
+        }
+    }
+
     private void generate_seed() {
         while (seedSet.size() < budget) {
             Node u = queue.poll();
 
             if (u.getFlag() == seedSet.size()) {
                 seedSet.add(u);
-
-                alreadyActivated.add(u.getId());
-                for (Node neighbors : this.graph.get(u)) {
-                    if (activationProbabilityEdges.get(new Pair(u.getId(), neighbors.getId()))) {
-                        alreadyActivated.add(neighbors.getId());
-                    }
-                }
-
+                addAlreadyActivated(u);
                 lastSeed = u;
                 continue;
             } else if (u.getPrevBest() == lastSeed) {
@@ -93,39 +100,37 @@ public class IndependentCascadeModelAlternative {
     }
 
     private double sigma(final Node node, final HashSet<Integer> alreadyActivated) {
+        return calculateInfluence(node, new HashSet<>(alreadyActivated));
+    }
+
+    private double calculateInfluence(final Node node, final HashSet<Integer> alreadyActivated) {
         final List<Node> neighbors = this.graph.get(node);
+
         int activated = 1;
 
         if (neighbors == null) {
             return activated;
         } else {
+            alreadyActivated.add(node.getId());
             for (final Node n : neighbors) {
                 if (!alreadyActivated.contains(n.getId())) {
                     if (activationProbabilityEdges.get(new Pair(node.getId(), n.getId()))) {
-                        activated += 1;
+                        activated += calculateInfluence(n, alreadyActivated);
                     }
                 }
             }
         }
-
         return activated;
     }
 
     private double sigma(final Node node, final Node cureBest, final HashSet<Integer> alreadyActivated) {
-        if (cureBest == null) {
-            return sigma(node, alreadyActivated);
-        } else {
-            HashSet<Integer> set = new HashSet<>(alreadyActivated);
-            final List<Node> cureBestNeighbors = this.graph.get(cureBest);
+        HashSet<Integer> newSet = new HashSet<>(alreadyActivated);
 
-            for (final Node n : cureBestNeighbors) {
-                if (!set.contains(n.getId())) {
-                    if (activationProbabilityEdges.get(new Pair(cureBest.getId(), n.getId()))) {
-                        set.add(n.getId());
-                    }
-                }
-            }
-            return sigma(node, set);
+        if (cureBest == null) {
+            return sigma(node, newSet);
+        } else {
+            calculateInfluence(cureBest, newSet);
+            return sigma(node, newSet);
         }
     }
 }

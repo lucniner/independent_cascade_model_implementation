@@ -10,12 +10,12 @@ public class Graph {
   private final Map<Node, List<Node>> graph = new HashMap<>();
 
   public void addNode(int id, int to) {
-    if (graph.get(id) == null) {
+    if (graph.get(new Node(id)) == null) {
       List<Node> neighbours = new ArrayList<>();
       neighbours.add(new Node(to));
       graph.put(new Node(id), neighbours);
     } else {
-      graph.get(id).add(new Node(to));
+      graph.get(new Node(id)).add(new Node(to));
     }
   }
 

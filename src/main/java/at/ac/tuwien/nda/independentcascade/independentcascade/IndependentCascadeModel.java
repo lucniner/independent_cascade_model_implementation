@@ -8,6 +8,7 @@ import java.util.*;
 
 public class IndependentCascadeModel {
 
+  private final Set<Node> seeds = new HashSet<>();
   private final Set<Node> activatedNodes = new HashSet<>();
   private final PriorityQueue<Node> heap = new PriorityQueue<>();
 
@@ -50,11 +51,13 @@ public class IndependentCascadeModel {
   }
 
   private void activateNodes() {
+    int currentActive = 0;
     while (activatedNodes.size() < budget) {
-      final Node u = heap.poll();
-      if (u == null) {
-        throw new RuntimeException("node is null on heap");
+      if (activatedNodes.size() > currentActive) {
+        System.out.println("new iteration " + currentActive);
+        currentActive = activatedNodes.size();
       }
+      final Node u = heap.poll();
       if (u.getFlag() == activatedNodes.size()) {
         activatedNodes.add(u);
         heap.remove(u);
@@ -67,38 +70,48 @@ public class IndependentCascadeModel {
         u.setPrevBest(currentBest);
         u.setMarginalGain2(calculateMarginalGainBasedOnActiveNodesAndCurrentBest(u));
       }
+
       u.setFlag(activatedNodes.size());
-      /*
-       * todo update curr best
-       * currentBest to track the user having the maximum marginal  gain w.r.t. S
-       * over all users examined in the current iteration
-       */
 
       final Comparator<Node> cmp = Comparator.comparing(Node::getMarginalGain1, Double::compareTo);
-
       final Optional<Node> maxValue = this.graph.keySet().stream().max(cmp);
       maxValue.ifPresent(max -> currentBest = max);
+
       heap.add(u);
     }
   }
 
-  // TODO implement me
   private double calculateSigma(final Node node) {
-    return activationFunction.getProbability() * this.graph.get(node).size();
+    if (this.activationFunction.getsActivated()) {
+      this.seeds.add(node);
+      return countMaxInfluence(node);
+    } else {
+      return 0;
+    }
+  }
+
+  private int countMaxInfluence(final Node node) {
+    final List<Node> neighbours = this.graph.get(node);
+    int activated = 1;
+    if (neighbours == null) {
+      return 1;
+    } else {
+      for (final Node n : neighbours) {
+        if (this.seeds.contains(n) || this.activationFunction.getsActivated()) {
+          this.seeds.add(node);
+          activated += countMaxInfluence(n);
+        }
+      }
+    }
+    return activated;
   }
 
   private double calculateSigma(final Node node, final Node currentBest) {
-    int count = 0;
-    final List<Node> neighbours = this.graph.get(node);
-    for (final Node n : neighbours) {
-      if (neighbours.contains(currentBest)) {
-        if (activationFunction.getsActivated()) {
-          count++;
-        }
-      }
-      count++;
+    if (currentBest == null) {
+      return countMaxInfluence(node);
+    } else {
+      return countMaxInfluence(node) + countMaxInfluence(currentBest);
     }
-    return count;
   }
 
   private double calculateMarginalGainBasedOnActiveNodes(final Node node) {
@@ -109,7 +122,7 @@ public class IndependentCascadeModel {
       }
     }
 
-    return count;
+    return this.activatedNodes.size();
   }
 
   private double calculateMarginalGainBasedOnActiveNodesAndCurrentBest(final Node node) {
@@ -121,6 +134,6 @@ public class IndependentCascadeModel {
         }
       }
     }
-    return count;
+    return this.activatedNodes.size() + 1;
   }
 }

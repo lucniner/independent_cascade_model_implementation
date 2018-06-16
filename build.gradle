@@ -12,6 +12,17 @@ apply plugin: 'java'
 // Apply the application plugin to add support for building an application
 apply plugin: 'application'
 
+
+jar {
+    manifest {
+        attributes "Main-Class": "at.ac.tuwien.nda.independentcascade.Application"
+    }
+
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
 // In this section you declare where to find the dependencies of your project
 repositories {
     // Use jcenter for resolving your dependencies.
@@ -29,5 +40,5 @@ dependencies {
 }
 
 // Define the main class for the application
-mainClassName = 'App'
+mainClassName = 'at.ac.tuwien.nda.independentcascade.Application'
 

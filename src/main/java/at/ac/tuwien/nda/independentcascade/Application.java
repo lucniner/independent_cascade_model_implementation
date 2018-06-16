@@ -3,11 +3,13 @@ package at.ac.tuwien.nda.independentcascade;
 import at.ac.tuwien.nda.independentcascade.activationfunctions.Activationable;
 import at.ac.tuwien.nda.independentcascade.activationfunctions.UniformActivation;
 import at.ac.tuwien.nda.independentcascade.independentcascade.IndependentCascadeModel;
+import at.ac.tuwien.nda.independentcascade.independentcascade.IndependentCascadeModelAlternative;
 import at.ac.tuwien.nda.independentcascade.reader.ProblemReader;
 import at.ac.tuwien.nda.independentcascade.valueobjects.Graph;
 import at.ac.tuwien.nda.independentcascade.valueobjects.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.Pair;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,9 +26,13 @@ public class Application {
     final ProblemReader reader = new ProblemReader(file);
     try {
       final Graph graph = reader.loadProblemInstance();
-      final IndependentCascadeModel model = new IndependentCascadeModel(graph, activation, 3);
-      final Set<Node> activeNodes = model.calculateActiveNodes();
-      activeNodes.forEach(System.out::println);
+      //final IndependentCascadeModel model = new IndependentCascadeModel(graph, activation, 3);
+      //final Set<Node> activeNodes = model.calculateActiveNodes();
+      IndependentCascadeModelAlternative model = new IndependentCascadeModelAlternative(graph, activation, 6);
+      final Pair<Integer, Set<Node>> seedSet = model.run();
+      System.out.println("Nodes activated: " + seedSet.getKey());
+      System.out.println("Seed set:");
+      seedSet.getValue().stream().map(value -> value.getId()).forEach(System.out::println);
     } catch (IOException e) {
       logger.error("error reading problem instance", e);
     }

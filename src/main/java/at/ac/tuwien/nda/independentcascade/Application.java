@@ -24,7 +24,7 @@ public class Application {
     final ProblemReader reader = new ProblemReader(file);
     try {
       final Graph graph = reader.loadProblemInstance();
-      final IndependentCascadeModel model = new IndependentCascadeModel(graph, activation, 2);
+      final IndependentCascadeModel model = new IndependentCascadeModel(graph, activation, 3);
       final Set<Node> activeNodes = model.calculateActiveNodes();
       activeNodes.forEach(System.out::println);
     } catch (IOException e) {

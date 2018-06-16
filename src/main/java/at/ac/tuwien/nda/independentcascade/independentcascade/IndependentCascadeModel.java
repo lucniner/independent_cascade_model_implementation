@@ -97,7 +97,7 @@ public class IndependentCascadeModel {
       return 1;
     } else {
       for (final Node n : neighbours) {
-        if (this.seeds.contains(n) || this.activationFunction.getsActivated()) {
+        if (!this.seeds.contains(n) && this.activationFunction.getsActivated()) {
           this.seeds.add(node);
           activated += countMaxInfluence(n);
         }
@@ -122,7 +122,7 @@ public class IndependentCascadeModel {
       }
     }
 
-    return this.activatedNodes.size();
+    return count;
   }
 
   private double calculateMarginalGainBasedOnActiveNodesAndCurrentBest(final Node node) {
@@ -134,6 +134,6 @@ public class IndependentCascadeModel {
         }
       }
     }
-    return this.activatedNodes.size() + 1;
+    return count;
   }
 }

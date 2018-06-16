@@ -12,31 +12,37 @@ public class SingleDiffusion {
   private final Activationable activationFunction;
   private final Set<Node> seeds = new HashSet<>();
 
-  public SingleDiffusion(
-          final Graph graph, final Activationable activationFunction) {
+  public SingleDiffusion(final Graph graph, final Activationable activationFunction) {
     this.graph = graph.getRepresentation();
     this.activationFunction = activationFunction;
   }
 
-  public float[] executeKDiffusions(final int k) {
+  public Map<Node, Float> executeKDiffusions(final int k) {
     calculateSeeds();
-    final Map<Integer, Integer>[] results = new Map[k];
-    final float[] avg = new float[seeds.size()];
+    final Map<Node, Integer>[] results = new Map[k];
+    final Map<Node, Float> avg = new HashMap<>();
     for (int i = 0; i < k; i++) {
-      results[i] = singleDiffusion();
-
-      for (int j = 0; j < seeds.size(); j++) {
-        avg[j] += results[i].get(j);
+      final Map<Node, Integer> result = singleDiffusion();
+      for (final Node n : seeds) {
+        final Float activatedNodes = result.get(n) * 1F;
+        final Float currentActivated = avg.get(n);
+        if (currentActivated == null) {
+          avg.put(n, activatedNodes);
+        } else {
+          final Float totalActivated = currentActivated + activatedNodes;
+          avg.put(n, totalActivated);
+        }
       }
     }
 
-    for (int i = 0; i < seeds.size(); i++) {
-      avg[i] = avg[i] / k;
+    for (final Node n : seeds) {
+      final float currentAverage = avg.get(n);
+      avg.put(n, currentAverage / k);
     }
     return avg;
   }
 
-  public Map<Integer, Integer> executeSingleDiffusion() {
+  public Map<Node, Integer> executeSingleDiffusion() {
     calculateSeeds();
     return singleDiffusion();
   }
@@ -49,10 +55,10 @@ public class SingleDiffusion {
     }
   }
 
-  private Map<Integer, Integer> singleDiffusion() {
+  private Map<Node, Integer> singleDiffusion() {
     final Set<Node> active = new HashSet<>();
     final Deque<Node> target = new ArrayDeque<>();
-    final Map<Integer, Integer> result = new HashMap<>();
+    final Map<Node, Integer> result = new HashMap<>();
     for (Node s : seeds) {
       target.push(s);
       while (!target.isEmpty()) {
@@ -67,7 +73,7 @@ public class SingleDiffusion {
           }
         }
       }
-      result.put(result.size() + 1, active.size());
+      result.put(s, active.size());
     }
     return result;
   }

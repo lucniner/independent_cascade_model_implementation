@@ -1,33 +1,37 @@
 package at.ac.tuwien.nda.independentcascade.independentcascade;
 
 import at.ac.tuwien.nda.independentcascade.activationfunctions.Activationable;
-import at.ac.tuwien.nda.independentcascade.valueobjects.Graph;
-import at.ac.tuwien.nda.independentcascade.valueobjects.Node;
+import at.ac.tuwien.nda.independentcascade.valueobjects.ProblemGraph;
+import at.ac.tuwien.nda.independentcascade.valueobjects.ProblemNode;
 
 import java.util.*;
 
+/**
+ * a greedy implementation based on the lecture slides
+ * running for each node all simulations
+ */
 public class GreedyAproximationAlgorithm {
 
-  private final Map<Node, List<Node>> graph;
+  private final Map<ProblemNode, List<ProblemNode>> graph;
   private final Activationable activationFunction;
-  private final Set<Node>[] seeds;
+  private final Set<ProblemNode>[] seeds;
   private final int numberOfSimulations;
-  private final Set<Node> activatedNodes = new HashSet<>();
+  private final Set<ProblemNode> activatedProblemNodes = new HashSet<>();
 
   public GreedyAproximationAlgorithm(
-          final Graph graph,
+          final ProblemGraph problemGraph,
           final Activationable activationFunction,
           final int numberOfSimulations) {
-    this.graph = graph.getRepresentation();
+    this.graph = problemGraph.getRepresentation();
     this.activationFunction = activationFunction;
     this.seeds = new HashSet[numberOfSimulations];
     this.numberOfSimulations = numberOfSimulations;
   }
 
-  public Set<Node> calculateActivatedNodes() {
+  public Set<ProblemNode> calculateActivatedNodes() {
     calculateScenarios();
     simulate();
-    return activatedNodes;
+    return activatedProblemNodes;
   }
 
   private void calculateScenarios() {
@@ -38,27 +42,27 @@ public class GreedyAproximationAlgorithm {
 
   private void calculateSeedsForCurrentScenario(int currentRun) {
     seeds[currentRun] = new HashSet<>();
-    for (final Node node : graph.keySet()) {
+    for (final ProblemNode problemNode : graph.keySet()) {
       if (activationFunction.getsActivated()) {
-        seeds[currentRun].add(node);
+        seeds[currentRun].add(problemNode);
       }
     }
   }
 
   private void simulate() {
-    while (activatedNodes.size() < numberOfSimulations) {
-      for (final Node n : graph.keySet()) {
-        if (!activatedNodes.contains(n)) {
-          final Set<Node> active = new HashSet<>();
-          final Deque<Node> target = new ArrayDeque<>();
-          final Map<Node, Integer> result = new HashMap<>();
+    while (activatedProblemNodes.size() < numberOfSimulations) {
+      for (final ProblemNode n : graph.keySet()) {
+        if (!activatedProblemNodes.contains(n)) {
+          final Set<ProblemNode> active = new HashSet<>();
+          final Deque<ProblemNode> target = new ArrayDeque<>();
+          final Map<ProblemNode, Integer> result = new HashMap<>();
           for (int i = 0; i < numberOfSimulations; i++) {
-            for (Node s : seeds[i]) {
+            for (ProblemNode s : seeds[i]) {
               target.push(s);
               while (!target.isEmpty()) {
-                final Node node = target.pop();
-                active.add(node);
-                for (Node follower : graph.get(s)) {
+                final ProblemNode problemNode = target.pop();
+                active.add(problemNode);
+                for (ProblemNode follower : graph.get(s)) {
                   if (activationFunction.getsActivated()) {
                     if (!active.contains(follower)) {
                       target.push(follower);
@@ -68,10 +72,10 @@ public class GreedyAproximationAlgorithm {
               }
               result.put(s, active.size());
             }
-            final Comparator<Map.Entry<Node, Integer>> cmp =
+            final Comparator<Map.Entry<ProblemNode, Integer>> cmp =
                     Comparator.comparing(Map.Entry::getValue, Integer::compareTo);
-            final Optional<Map.Entry<Node, Integer>> maxValue = result.entrySet().stream().max(cmp);
-            maxValue.ifPresent(max -> activatedNodes.add(max.getKey()));
+            final Optional<Map.Entry<ProblemNode, Integer>> maxValue = result.entrySet().stream().max(cmp);
+            maxValue.ifPresent(max -> activatedProblemNodes.add(max.getKey()));
           }
         }
       }

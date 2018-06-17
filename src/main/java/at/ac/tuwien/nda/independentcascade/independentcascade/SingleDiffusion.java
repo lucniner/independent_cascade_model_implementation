@@ -1,29 +1,34 @@
 package at.ac.tuwien.nda.independentcascade.independentcascade;
 
 import at.ac.tuwien.nda.independentcascade.activationfunctions.Activationable;
-import at.ac.tuwien.nda.independentcascade.valueobjects.Graph;
-import at.ac.tuwien.nda.independentcascade.valueobjects.Node;
+import at.ac.tuwien.nda.independentcascade.valueobjects.ProblemGraph;
+import at.ac.tuwien.nda.independentcascade.valueobjects.ProblemNode;
 
 import java.util.*;
 
+/**
+ * this class was only an alternative for the other implementation to have some point of reference
+ * it is heavily based on Suman Kundu's implementation
+ * http://www.sumankundu.info/articles/detail/How-To-Code-Independent-Cascade-Model-of-Information-Diffusion
+ */
 public class SingleDiffusion {
 
-  private final Map<Node, List<Node>> graph;
+  private final Map<ProblemNode, List<ProblemNode>> graph;
   private final Activationable activationFunction;
-  private final Set<Node> seeds = new HashSet<>();
+  private final Set<ProblemNode> seeds = new HashSet<>();
 
-  public SingleDiffusion(final Graph graph, final Activationable activationFunction) {
-    this.graph = graph.getRepresentation();
+  public SingleDiffusion(final ProblemGraph problemGraph, final Activationable activationFunction) {
+    this.graph = problemGraph.getRepresentation();
     this.activationFunction = activationFunction;
   }
 
-  public Map<Node, Float> executeKDiffusions(final int k) {
+  public Map<ProblemNode, Float> executeKDiffusions(final int k) {
     calculateSeeds();
-    final Map<Node, Integer>[] results = new Map[k];
-    final Map<Node, Float> avg = new HashMap<>();
+    final Map<ProblemNode, Integer>[] results = new Map[k];
+    final Map<ProblemNode, Float> avg = new HashMap<>();
     for (int i = 0; i < k; i++) {
-      final Map<Node, Integer> result = singleDiffusion();
-      for (final Node n : seeds) {
+      final Map<ProblemNode, Integer> result = singleDiffusion();
+      for (final ProblemNode n : seeds) {
         final Float activatedNodes = result.get(n) * 1F;
         final Float currentActivated = avg.get(n);
         if (currentActivated == null) {
@@ -35,37 +40,37 @@ public class SingleDiffusion {
       }
     }
 
-    for (final Node n : seeds) {
+    for (final ProblemNode n : seeds) {
       final float currentAverage = avg.get(n);
       avg.put(n, currentAverage / k);
     }
     return avg;
   }
 
-  public Map<Node, Integer> executeSingleDiffusion() {
+  public Map<ProblemNode, Integer> executeSingleDiffusion() {
     calculateSeeds();
     return singleDiffusion();
   }
 
   private void calculateSeeds() {
-    for (final Node node : graph.keySet()) {
+    for (final ProblemNode problemNode : graph.keySet()) {
       if (activationFunction.getsActivated()) {
-        seeds.add(node);
+        seeds.add(problemNode);
       }
     }
   }
 
-  private Map<Node, Integer> singleDiffusion() {
-    final Set<Node> active = new HashSet<>();
-    final Deque<Node> target = new ArrayDeque<>();
-    final Map<Node, Integer> result = new HashMap<>();
-    for (Node s : seeds) {
+  private Map<ProblemNode, Integer> singleDiffusion() {
+    final Set<ProblemNode> active = new HashSet<>();
+    final Deque<ProblemNode> target = new ArrayDeque<>();
+    final Map<ProblemNode, Integer> result = new HashMap<>();
+    for (ProblemNode s : seeds) {
       target.push(s);
       while (!target.isEmpty()) {
-        final Node node = target.pop();
-        active.add(node);
+        final ProblemNode problemNode = target.pop();
+        active.add(problemNode);
 
-        for (Node follower : graph.get(s)) {
+        for (ProblemNode follower : graph.get(s)) {
           if (activationFunction.getsActivated()) {
             if (!active.contains(follower)) {
               target.push(follower);

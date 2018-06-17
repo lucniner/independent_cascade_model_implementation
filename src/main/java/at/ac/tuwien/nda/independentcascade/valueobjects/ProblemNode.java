@@ -2,15 +2,15 @@ package at.ac.tuwien.nda.independentcascade.valueobjects;
 
 import java.util.Objects;
 
-public class Node implements Comparable {
+public class ProblemNode implements Comparable {
 
   private final int id;
   private int flag;
-  private Node prevBest;
+  private ProblemNode prevBest;
   private double marginalGain1;
   private double marginalGain2;
 
-  public Node(final int id) {
+  public ProblemNode(final int id) {
     this.id = id;
   }
 
@@ -23,16 +23,16 @@ public class Node implements Comparable {
     return flag;
   }
 
-  public Node setFlag(final int flag) {
+  public ProblemNode setFlag(final int flag) {
     this.flag = flag;
     return this;
   }
 
-  public Node getPrevBest() {
+  public ProblemNode getPrevBest() {
     return prevBest;
   }
 
-  public Node setPrevBest(final Node prevBest) {
+  public ProblemNode setPrevBest(final ProblemNode prevBest) {
     this.prevBest = prevBest;
     return this;
   }
@@ -41,7 +41,7 @@ public class Node implements Comparable {
     return marginalGain1;
   }
 
-  public Node setMarginalGain1(final double marginalGain1) {
+  public ProblemNode setMarginalGain1(final double marginalGain1) {
     this.marginalGain1 = marginalGain1;
     return this;
   }
@@ -50,7 +50,7 @@ public class Node implements Comparable {
     return marginalGain2;
   }
 
-  public Node setMarginalGain2(final double marginalGain2) {
+  public ProblemNode setMarginalGain2(final double marginalGain2) {
     this.marginalGain2 = marginalGain2;
     return this;
   }
@@ -59,8 +59,8 @@ public class Node implements Comparable {
   public boolean equals(final Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    final Node node = (Node) o;
-    return id == node.id;
+    final ProblemNode problemNode = (ProblemNode) o;
+    return id == problemNode.id;
   }
 
   @Override
@@ -70,8 +70,8 @@ public class Node implements Comparable {
 
   @Override
   public int compareTo(final Object o) {
-    if (o instanceof Node) {
-      return (int) (((Node) o).getMarginalGain1() - this.getMarginalGain1());
+    if (o instanceof ProblemNode) {
+      return (int) (((ProblemNode) o).getMarginalGain1() - this.getMarginalGain1());
     }
     return 0;
   }

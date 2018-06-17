@@ -1,139 +1,168 @@
 package at.ac.tuwien.nda.independentcascade.independentcascade;
 
 import at.ac.tuwien.nda.independentcascade.activationfunctions.Activationable;
-import at.ac.tuwien.nda.independentcascade.valueobjects.Graph;
-import at.ac.tuwien.nda.independentcascade.valueobjects.Node;
+import at.ac.tuwien.nda.independentcascade.valueobjects.ProblemGraph;
+import at.ac.tuwien.nda.independentcascade.valueobjects.ProblemNode;
+import util.Pair;
 
 import java.util.*;
 
+/**
+ * independent cascade model with the speedup of
+ * Goyal et al. from 2011 (CELF++)
+ * calculating all possible active nodes before the actual simulation
+ */
 public class IndependentCascadeModel {
 
-  private final Set<Node> seeds = new HashSet<>();
-  private final Set<Node> activatedNodes = new HashSet<>();
-  private final PriorityQueue<Node> heap = new PriorityQueue<>();
-
-  private final Map<Node, List<Node>> graph;
+  private final Map<ProblemNode, List<ProblemNode>> graph;
   private final Activationable activationFunction;
   private final int budget;
+  private final int scenarioNumber;
 
-  private Node lastSeed;
-  private Node currentBest;
+  private final Map<Pair<Integer, Integer>, List<Boolean>> activationProbabilityEdges = new HashMap<>();
+  private final Set<ProblemNode> seedSet = new HashSet<>();
+  private final PriorityQueue<ProblemNode> queue = new PriorityQueue<>();
+  private ProblemNode lastSeed = null;
+  private ProblemNode currBest = null;
+
+  private final Map<Integer, Set<Integer>> alreadyActivated = new HashMap<>();
 
   public IndependentCascadeModel(
-          final Graph graph, final Activationable activationFunction, final int budget) {
-    this.graph = graph.getRepresentation();
+          final ProblemGraph problemGraph, final Activationable activationFunction, final int budget, final int scenarioNumber) {
+    this.graph = problemGraph.getRepresentation();
     this.activationFunction = activationFunction;
     this.budget = budget;
+    this.scenarioNumber = scenarioNumber;
   }
 
-  public Set<Node> calculateActiveNodes() {
-    initializeActiveGraphSet();
-    activateNodes();
-    return activatedNodes;
+  public Pair<Integer, Set<ProblemNode>> run() {
+    init();
+    generate_seed();
+
+    int sum = 0;
+    for (Map.Entry entry : alreadyActivated.entrySet()) {
+      sum += ((Set<Integer>) entry.getValue()).size();
+    }
+    sum = sum / scenarioNumber;
+    return new Pair(sum, seedSet);
   }
 
-  private void initializeActiveGraphSet() {
-    for (final Map.Entry<Node, List<Node>> entry : graph.entrySet()) {
-      final Node node = entry.getKey();
-      node.setPrevBest(currentBest);
-      node.setFlag(0);
-      node.setMarginalGain1(calculateSigma(node));
-      node.setMarginalGain2(calculateSigma(node, currentBest));
-      heap.add(node);
-      if (currentBest == null) {
-        currentBest = node;
-      } else {
-        if (node.getMarginalGain1() > currentBest.getMarginalGain1()) {
-          currentBest = node;
+  private void addAlreadyActivated(int index, ProblemNode u) {
+    alreadyActivated.get(index).add(u.getId());
+    if (this.graph.containsKey(u)) {
+      for (ProblemNode neighbors : this.graph.get(u)) {
+        if (!alreadyActivated.get(index).contains(neighbors.getId())) {
+          if (activationProbabilityEdges.get(new Pair(u.getId(), neighbors.getId())).get(index)) {
+            alreadyActivated.get(index).add(neighbors.getId());
+            addAlreadyActivated(index, neighbors);
+          }
         }
       }
     }
   }
 
-  private void activateNodes() {
-    int currentActive = 0;
-    while (activatedNodes.size() < budget) {
-      if (activatedNodes.size() > currentActive) {
-        System.out.println("new iteration " + currentActive);
-        currentActive = activatedNodes.size();
-      }
-      final Node u = heap.poll();
-      if (u == null) {
-        throw new RuntimeException("no node in heap to poll");
-      }
-      if (u.getFlag() == activatedNodes.size()) {
-        activatedNodes.add(u);
-        heap.remove(u);
+  private void generate_seed() {
+    while (seedSet.size() < budget) {
+      ProblemNode u = queue.poll();
+
+      if (u.getFlag() == seedSet.size()) {
+        seedSet.add(u);
+        for (int i = 0; i < scenarioNumber; i++) {
+          addAlreadyActivated(i, u);
+        }
         lastSeed = u;
         continue;
-      } else if (u.getPrevBest().equals(lastSeed)) {
+      } else if (u.getPrevBest() == lastSeed) {
         u.setMarginalGain1(u.getMarginalGain2());
       } else {
-        u.setMarginalGain1(calculateMarginalGainBasedOnActiveNodes(u));
-        u.setPrevBest(currentBest);
-        u.setMarginalGain2(calculateMarginalGainBasedOnActiveNodesAndCurrentBest(u));
+        u.setMarginalGain1(sigma(u, alreadyActivated));
+        u.setPrevBest(currBest);
+        u.setMarginalGain2(sigma(u, currBest, alreadyActivated));
       }
 
-      u.setFlag(activatedNodes.size());
-
-      final Comparator<Node> cmp = Comparator.comparing(Node::getMarginalGain1, Double::compareTo);
-      final Optional<Node> maxValue = this.graph.keySet().stream().max(cmp);
-      maxValue.ifPresent(max -> currentBest = max);
-
-      heap.add(u);
+      u.setFlag(seedSet.size());
+      currBest = queue.peek();
+      queue.add(u);
     }
   }
 
-  private double calculateSigma(final Node node) {
-    if (this.activationFunction.getsActivated()) {
-      this.seeds.add(node);
-      return countMaxInfluence(node);
-    } else {
-      return 0;
+  private void init() {
+    for (final Map.Entry<ProblemNode, List<ProblemNode>> entry : graph.entrySet()) {
+      final ProblemNode from = entry.getKey();
+      final List<ProblemNode> toList = entry.getValue();
+      for (ProblemNode to : toList) {
+        List<Boolean> activatedList = new ArrayList<>(scenarioNumber);
+
+        for (int i = 0; i < scenarioNumber; i++) {
+          activatedList.add(this.activationFunction.getsActivated());
+        }
+        activationProbabilityEdges.put(new Pair(from.getId(), to.getId()), activatedList);
+      }
+    }
+
+    for (int i = 0; i < scenarioNumber; i++) {
+      alreadyActivated.put(i, new HashSet<>());
+    }
+
+    for (final Map.Entry<ProblemNode, List<ProblemNode>> entry : graph.entrySet()) {
+      final ProblemNode u = entry.getKey();
+      u.setFlag(0);
+      u.setPrevBest(currBest);
+      u.setMarginalGain1(sigma(u, alreadyActivated));
+      u.setMarginalGain2(sigma(currBest, alreadyActivated) + sigma(u, currBest, alreadyActivated));
+      queue.add(u);
+
+      if (currBest == null) {
+        currBest = u;
+      } else {
+        if (u.getMarginalGain1() > currBest.getMarginalGain1()) {
+          currBest = u;
+        }
+      }
     }
   }
 
-  private int countMaxInfluence(final Node node) {
-    final List<Node> neighbours = this.graph.get(node);
+  private double sigma(final ProblemNode problemNode, final Map<Integer, Set<Integer>> alreadyActivated) {
+    double influence = 0;
+    for (int i = 0; i < scenarioNumber; i++) {
+      HashSet<Integer> newSet = new HashSet<>(alreadyActivated.get(i));
+      influence += calculateInfluence(i, problemNode, newSet);
+    }
+    return influence / scenarioNumber;
+  }
+
+  private double calculateInfluence(final int index, final ProblemNode problemNode, final HashSet<Integer> alreadyActivated) {
+    final List<ProblemNode> neighbors = this.graph.get(problemNode);
+
     int activated = 1;
-    if (neighbours == null) {
-      return 1;
+
+    if (neighbors == null) {
+      return activated;
     } else {
-      for (final Node n : neighbours) {
-        if (!this.seeds.contains(n) && this.activationFunction.getsActivated()) {
-          this.seeds.add(node);
-          activated += countMaxInfluence(n);
+      alreadyActivated.add(problemNode.getId());
+      for (final ProblemNode n : neighbors) {
+        if (!alreadyActivated.contains(n.getId())) {
+          if (activationProbabilityEdges.get(new Pair(problemNode.getId(), n.getId())).get(index)) {
+            activated += calculateInfluence(index, n, alreadyActivated);
+          }
         }
       }
     }
     return activated;
   }
 
-  private double calculateSigma(final Node node, final Node currentBest) {
-    if (currentBest == null) {
-      return countMaxInfluence(node);
-    } else {
-      return countMaxInfluence(node) + countMaxInfluence(currentBest);
-    }
-  }
+  private double sigma(final ProblemNode problemNode, final ProblemNode cureBest, final Map<Integer, Set<Integer>> alreadyActivated) {
+    if (cureBest != null) {
+      for (int i = 0; i < scenarioNumber; i++) {
+        HashSet<Integer> newSet = new HashSet<>(alreadyActivated.get(i));
+        calculateInfluence(i, cureBest, newSet);
 
-  private double calculateMarginalGainBasedOnActiveNodes(final Node node) {
-    int count = 0;
-    for (final Node n : this.graph.get(node)) {
-      if (!activatedNodes.contains(n)) {
-        count++;
       }
     }
-    return count;
+    return sigma(problemNode, alreadyActivated);
   }
 
-  private double calculateMarginalGainBasedOnActiveNodesAndCurrentBest(final Node node) {
-    int count = 0;
-    for (final Node n : this.graph.get(node)) {
-      if (!activatedNodes.contains(n) && !n.equals(currentBest)) {
-        count++;
-      }
-    }
-    return count++;
+  public Map<Integer, Set<Integer>> getAlreadyActivated() {
+    return alreadyActivated;
   }
 }

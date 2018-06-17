@@ -14,18 +14,18 @@ import java.util.*;
  */
 public class IndependentCascadeModel {
 
+  private final Map<Integer, Set<Integer>> alreadyActivated = new HashMap<>();
+  private final Map<Pair<Integer, Integer>, List<Boolean>> activationProbabilityEdges = new HashMap<>();
+  private final Set<ProblemNode> seedSet = new HashSet<>();
+  private final PriorityQueue<ProblemNode> queue = new PriorityQueue<>();
+
   private final Map<ProblemNode, List<ProblemNode>> graph;
   private final Activationable activationFunction;
   private final int budget;
   private final int scenarioNumber;
 
-  private final Map<Pair<Integer, Integer>, List<Boolean>> activationProbabilityEdges = new HashMap<>();
-  private final Set<ProblemNode> seedSet = new HashSet<>();
-  private final PriorityQueue<ProblemNode> queue = new PriorityQueue<>();
   private ProblemNode lastSeed = null;
   private ProblemNode currBest = null;
-
-  private final Map<Integer, Set<Integer>> alreadyActivated = new HashMap<>();
 
   public IndependentCascadeModel(
           final ProblemGraph problemGraph, final Activationable activationFunction, final int budget, final int scenarioNumber) {
@@ -44,7 +44,7 @@ public class IndependentCascadeModel {
       sum += ((Set<Integer>) entry.getValue()).size();
     }
     sum = sum / scenarioNumber;
-    return new Pair(sum, seedSet);
+    return new Pair<>(sum, seedSet);
   }
 
   private void addAlreadyActivated(int index, ProblemNode u) {
@@ -52,7 +52,7 @@ public class IndependentCascadeModel {
     if (this.graph.containsKey(u)) {
       for (ProblemNode neighbors : this.graph.get(u)) {
         if (!alreadyActivated.get(index).contains(neighbors.getId())) {
-          if (activationProbabilityEdges.get(new Pair(u.getId(), neighbors.getId())).get(index)) {
+          if (activationProbabilityEdges.get(new Pair<>(u.getId(), neighbors.getId())).get(index)) {
             alreadyActivated.get(index).add(neighbors.getId());
             addAlreadyActivated(index, neighbors);
           }
@@ -96,7 +96,7 @@ public class IndependentCascadeModel {
         for (int i = 0; i < scenarioNumber; i++) {
           activatedList.add(this.activationFunction.getsActivated());
         }
-        activationProbabilityEdges.put(new Pair(from.getId(), to.getId()), activatedList);
+        activationProbabilityEdges.put(new Pair<>(from.getId(), to.getId()), activatedList);
       }
     }
 
@@ -142,7 +142,7 @@ public class IndependentCascadeModel {
       alreadyActivated.add(problemNode.getId());
       for (final ProblemNode n : neighbors) {
         if (!alreadyActivated.contains(n.getId())) {
-          if (activationProbabilityEdges.get(new Pair(problemNode.getId(), n.getId())).get(index)) {
+          if (activationProbabilityEdges.get(new Pair<>(problemNode.getId(), n.getId())).get(index)) {
             activated += calculateInfluence(index, n, alreadyActivated);
           }
         }

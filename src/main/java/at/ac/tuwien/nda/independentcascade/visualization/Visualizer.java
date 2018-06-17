@@ -13,6 +13,10 @@ public class Visualizer {
   private final ProblemGraph problem;
   private final Set<Integer> seeds;
   private final Set<Integer> activatedNodes = new HashSet<>();
+  private final Set<Node> seedNodes = new HashSet<>();
+  private final Set<Node> activeNodes = new HashSet<>();
+  private final Set<Integer> drawnNodes = new HashSet<>();
+  private final Graph graph = new MultiGraph("graph");
 
   public Visualizer(
           final ProblemGraph problem,
@@ -24,11 +28,6 @@ public class Visualizer {
   }
 
   public void createGraph() {
-
-    final Graph graph = new MultiGraph("graph");
-    final Set<Node> seedNodes = new HashSet<>();
-    final Set<Node> activeNodes = new HashSet<>();
-    final Set<Integer> drawnNodes = new HashSet<>();
 
     for (ProblemNode n : problem.getRepresentation().keySet()) {
       final int id = n.getId();
@@ -46,53 +45,40 @@ public class Visualizer {
     for (Integer seed : seeds) {
       final Node seedNode = graph.getNode(String.valueOf(seed));
       final List<ProblemNode> neighbours = problem.getRepresentation().get(new ProblemNode(seed));
-      int count = 0;
-      for (final ProblemNode n : neighbours) {
-        if (activatedNodes.contains(n.getId())) {
-          final Node node = graph.getNode(String.valueOf(n.getId()));
-          if (seedNode != null && node != null) {
-            graph.addEdge(UUID.randomUUID().toString(), seedNode, node);
-          }
-        } else {
-          if (count < 4 && !drawnNodes.contains(n.getId())) {
-            drawnNodes.add(n.getId());
-            final Node neighbourNode = graph.addNode(String.valueOf(n.getId()));
-            seedNodes.add(neighbourNode);
-            neighbourNode.addAttribute("ui.style", "fill-color: black;size: 20px;");
-            graph.addEdge(UUID.randomUUID().toString(), seedNode, neighbourNode);
-            count++;
-          }
-        }
-      }
+      drawNeighbours(seedNode, neighbours);
     }
 
     for (Integer active : activatedNodes) {
-      final Node seedNode = graph.getNode(String.valueOf(active));
+      final Node currentActive = graph.getNode(String.valueOf(active));
       final List<ProblemNode> neighbours = problem.getRepresentation().get(new ProblemNode(active));
       if (neighbours == null) {
         continue;
       }
-      int count = 0;
-      for (final ProblemNode n : neighbours) {
-        if (activatedNodes.contains(n.getId())) {
-          final Node node = graph.getNode(String.valueOf(n.getId()));
-          if (seedNode != null && node != null) {
-            graph.addEdge(UUID.randomUUID().toString(), seedNode, node);
-          }
-        } else {
-          if (count < 4 && !drawnNodes.contains(n.getId())) {
-            drawnNodes.add(n.getId());
-            final Node neighbourNode = graph.addNode(String.valueOf(n.getId()));
-            seedNodes.add(neighbourNode);
-            neighbourNode.addAttribute("ui.style", "fill-color: black;size: 20px;");
-            graph.addEdge(UUID.randomUUID().toString(), seedNode, neighbourNode);
-            count++;
-          }
-        }
-      }
+      drawNeighbours(currentActive, neighbours);
     }
 
 
     graph.display(true);
+  }
+
+  private void drawNeighbours(final Node from, final List<ProblemNode> neighbours) {
+    int count = 0;
+    for (final ProblemNode n : neighbours) {
+      if (activatedNodes.contains(n.getId())) {
+        final Node node = graph.getNode(String.valueOf(n.getId()));
+        if (from != null && node != null) {
+          graph.addEdge(UUID.randomUUID().toString(), from, node);
+        }
+      } else {
+        if (count < 4 && !drawnNodes.contains(n.getId())) {
+          drawnNodes.add(n.getId());
+          final Node neighbourNode = graph.addNode(String.valueOf(n.getId()));
+          seedNodes.add(neighbourNode);
+          neighbourNode.addAttribute("ui.style", "fill-color: black;size: 20px;");
+          graph.addEdge(UUID.randomUUID().toString(), from, neighbourNode);
+          count++;
+        }
+      }
+    }
   }
 }

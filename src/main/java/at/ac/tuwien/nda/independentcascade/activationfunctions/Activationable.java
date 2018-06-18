@@ -1,8 +1,9 @@
 package at.ac.tuwien.nda.independentcascade.activationfunctions;
 
+import at.ac.tuwien.nda.independentcascade.valueobjects.ProblemNode;
+
 public interface Activationable {
 
-  double getProbability();
 
-  boolean getsActivated();
+  boolean getsActivated(final ProblemNode node);
 }

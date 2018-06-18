@@ -54,7 +54,7 @@ public class SingleDiffusion {
 
   private void calculateSeeds() {
     for (final ProblemNode problemNode : graph.keySet()) {
-      if (activationFunction.getsActivated()) {
+      if (activationFunction.getsActivated(problemNode)) {
         seeds.add(problemNode);
       }
     }
@@ -69,12 +69,9 @@ public class SingleDiffusion {
       while (!target.isEmpty()) {
         final ProblemNode problemNode = target.pop();
         active.add(problemNode);
-
         for (ProblemNode follower : graph.get(s)) {
-          if (activationFunction.getsActivated()) {
-            if (!active.contains(follower)) {
+          if (activationFunction.getsActivated(follower) && !active.contains(follower)) {
               target.push(follower);
-            }
           }
         }
       }

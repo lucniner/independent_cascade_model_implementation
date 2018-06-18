@@ -15,9 +15,11 @@ java -jar independent_cascade_model_implementation.jar
 The following options are available and can be displayed when adding the -h flag to the jar execution. 
 
 ```shell
-usage: java -jar <name> [-b <arg>] [-h] [-p <arg>] [-s <arg>] [-v]
+usage: java -jar <name> [-b <arg>] [-h] [-i] [-p <arg>] [-s <arg>] [-v]
  -b,--budget <arg>        how many seed nodes should be chosen value > 0
  -h,--help                print this message
+ -i,--indegree            use the in-degree activation function instead of
+                          the uniform probability
  -p,--probability <arg>   the uniform probability, value between 1 and 100
  -s,--scenarios <arg>     how many scenarios should be created value > 0
  -v,--visualize           visualization of the output

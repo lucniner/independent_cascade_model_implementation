@@ -7,8 +7,7 @@ import at.ac.tuwien.nda.independentcascade.valueobjects.ProblemNode;
 import java.util.*;
 
 /**
- * a greedy implementation based on the lecture slides
- * running for each node all simulations
+ * a greedy implementation based on the lecture slides running for each node all simulations
  */
 public class GreedyAproximationAlgorithm {
 
@@ -16,16 +15,19 @@ public class GreedyAproximationAlgorithm {
   private final Activationable activationFunction;
   private final Set<ProblemNode>[] seeds;
   private final int numberOfSimulations;
+  private final int budget;
   private final Set<ProblemNode> activatedProblemNodes = new HashSet<>();
 
   public GreedyAproximationAlgorithm(
           final ProblemGraph problemGraph,
           final Activationable activationFunction,
-          final int numberOfSimulations) {
+          final int numberOfSimulations,
+          final int budget) {
     this.graph = problemGraph.getRepresentation();
     this.activationFunction = activationFunction;
     this.seeds = new HashSet[numberOfSimulations];
     this.numberOfSimulations = numberOfSimulations;
+    this.budget = budget;
   }
 
   public Set<ProblemNode> calculateActivatedNodes() {
@@ -43,14 +45,14 @@ public class GreedyAproximationAlgorithm {
   private void calculateSeedsForCurrentScenario(int currentRun) {
     seeds[currentRun] = new HashSet<>();
     for (final ProblemNode problemNode : graph.keySet()) {
-      if (activationFunction.getsActivated()) {
+      if (activationFunction.getsActivated(problemNode)) {
         seeds[currentRun].add(problemNode);
       }
     }
   }
 
   private void simulate() {
-    while (activatedProblemNodes.size() < numberOfSimulations) {
+    while (activatedProblemNodes.size() < budget) {
       for (final ProblemNode n : graph.keySet()) {
         if (!activatedProblemNodes.contains(n)) {
           final Set<ProblemNode> active = new HashSet<>();
@@ -63,10 +65,8 @@ public class GreedyAproximationAlgorithm {
                 final ProblemNode problemNode = target.pop();
                 active.add(problemNode);
                 for (ProblemNode follower : graph.get(s)) {
-                  if (activationFunction.getsActivated()) {
-                    if (!active.contains(follower)) {
-                      target.push(follower);
-                    }
+                  if (activationFunction.getsActivated(follower) && !active.contains(follower)) {
+                    target.push(follower);
                   }
                 }
               }
@@ -74,7 +74,8 @@ public class GreedyAproximationAlgorithm {
             }
             final Comparator<Map.Entry<ProblemNode, Integer>> cmp =
                     Comparator.comparing(Map.Entry::getValue, Integer::compareTo);
-            final Optional<Map.Entry<ProblemNode, Integer>> maxValue = result.entrySet().stream().max(cmp);
+            final Optional<Map.Entry<ProblemNode, Integer>> maxValue =
+                    result.entrySet().stream().max(cmp);
             maxValue.ifPresent(max -> activatedProblemNodes.add(max.getKey()));
           }
         }

@@ -1,6 +1,7 @@
 package at.ac.tuwien.nda.independentcascade;
 
 import at.ac.tuwien.nda.independentcascade.activationfunctions.Activationable;
+import at.ac.tuwien.nda.independentcascade.activationfunctions.InDegreeActivation;
 import at.ac.tuwien.nda.independentcascade.activationfunctions.UniformActivation;
 import at.ac.tuwien.nda.independentcascade.independentcascade.IndependentCascadeModel;
 import at.ac.tuwien.nda.independentcascade.reader.ProblemReader;
@@ -39,21 +40,24 @@ public class Application {
 
     logger.info("simulating with budget of {}", budget);
 
-
     if (cmd.hasOption("scenarios")) {
       scenarios = Integer.parseInt(cmd.getOptionValue("scenarios"));
     }
 
     logger.info("simulating with {} scenarios", scenarios);
 
-
-    final Activationable activation = new UniformActivation(probability);
+    Activationable activation = new UniformActivation(probability);
     final InputStream inputStream =
             Application.class.getClassLoader().getResourceAsStream("Cit-HepPh.txt");
     final ProblemReader reader = new ProblemReader(inputStream);
     try {
       final ProblemGraph problemGraph = reader.loadProblemInstance();
       logger.info("read problem graph");
+
+      if (cmd.hasOption("indegree")) {
+        activation = new InDegreeActivation(problemGraph);
+      }
+
       final IndependentCascadeModel model =
               new IndependentCascadeModel(problemGraph, activation, budget, scenarios);
 
@@ -71,7 +75,8 @@ public class Application {
               "Running time [seconds]: " + (Instant.now().getEpochSecond() - begin.getEpochSecond()));
 
       if (cmd.hasOption("visualize")) {
-        final Visualizer visualizer = new Visualizer(problemGraph, seeds, model.getAlreadyActivated());
+        final Visualizer visualizer =
+                new Visualizer(problemGraph, seeds, model.getAlreadyActivated());
         visualizer.createGraph();
       }
     } catch (IOException e) {
@@ -91,12 +96,19 @@ public class Application {
             new Option("b", "budget", true, "how many seed nodes should be chosen value > 0");
     Option scenarios =
             new Option("s", "scenarios", true, "how many scenarios should be created value > 0");
+    Option inDegreeActivation =
+            new Option(
+                    "i",
+                    "indegree",
+                    false,
+                    "use the in-degree activation function instead of the uniform probability");
 
     options.addOption(help);
     options.addOption(visualize);
     options.addOption(probability);
     options.addOption(budget);
     options.addOption(scenarios);
+    options.addOption(inDegreeActivation);
 
     try {
       cmd = new DefaultParser().parse(options, args, false);

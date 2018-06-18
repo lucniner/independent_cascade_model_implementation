@@ -94,7 +94,7 @@ public class IndependentCascadeModel {
         List<Boolean> activatedList = new ArrayList<>(scenarioNumber);
 
         for (int i = 0; i < scenarioNumber; i++) {
-          activatedList.add(this.activationFunction.getsActivated());
+          activatedList.add(this.activationFunction.getsActivated(to));
         }
         activationProbabilityEdges.put(new Pair<>(from.getId(), to.getId()), activatedList);
       }

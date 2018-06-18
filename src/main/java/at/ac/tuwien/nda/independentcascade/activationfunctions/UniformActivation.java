@@ -1,5 +1,7 @@
 package at.ac.tuwien.nda.independentcascade.activationfunctions;
 
+import at.ac.tuwien.nda.independentcascade.valueobjects.ProblemNode;
+
 import java.util.Random;
 
 public class UniformActivation implements Activationable {
@@ -11,13 +13,9 @@ public class UniformActivation implements Activationable {
     this.probability = probability;
   }
 
-  @Override
-  public double getProbability() {
-    return probability / 100.0;
-  }
 
   @Override
-  public boolean getsActivated() {
+  public boolean getsActivated(final ProblemNode node) {
     final int max = 100 / probability;
     return random.nextInt(max + 1) == 1;
   }
